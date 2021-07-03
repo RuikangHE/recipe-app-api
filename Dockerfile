@@ -1,5 +1,5 @@
 FROM python:3.7-alpine
-MAINTAINER Intern Eric
+LABEL maintainer="eric2369158615@gmail.com"
 
 ENV PYTHONUNBUFFERED 1
 
