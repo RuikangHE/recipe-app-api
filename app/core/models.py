@@ -9,7 +9,7 @@ import uuid
 
 def recipe_image_file_path(instance, filename):
     """Generate file path for new recipe image"""
-    extension = filename.split('.')[-1]
+    extension = filename.split('.')[-1]  # jpg/png...
     filename = f'{uuid.uuid4()}.{extension}'
 
     return os.path.join('uploads/recipe', filename)

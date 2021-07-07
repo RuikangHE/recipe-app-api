@@ -8,8 +8,17 @@ from rest_framework.test import APIClient
 from core.models import Tag, Ingredient, Recipe
 from recipe.serializers import RecipeSerializer, RecipeDetailSerializer
 
+import os
+import tempfile
+
+from PIL import Image
+
 
 RECIPES_URL = reverse('recipe:recipe-list')
+
+
+def image_upload_url(recipe_id):
+    return reverse('recipe:recipe-upload-image', args=[recipe_id])
 
 
 def recipe_detail_url(recipe_id):
@@ -189,3 +198,84 @@ class PrivateRecipeApiTest(TestCase):
             self.assertEqual(payload[key], getattr(recipe, key))
         self.assertEqual(tags.count(), 1)
         self.assertIn(tag, tags)
+
+
+class RecipeImageUploadTests(TestCase):
+
+    def setUp(self):
+        self.client = APIClient()
+        self.user = get_user_model().objects.create(
+            email='sample@user.com',
+            password='testpass'
+        )
+        self.client.force_authenticate(self.user)
+        self.recipe = create_sample_recipe(user=self.user)
+
+    def tearDown(self):
+        self.recipe.image.delete()
+
+    def test_upload_recipe_image(self):
+        url = image_upload_url(self.recipe.id)
+        with tempfile.NamedTemporaryFile(suffix='.jpg') as ntf:
+            img = Image.new('RGB', (10, 10))
+            img.save(ntf, format='JPEG')
+            ntf.seek(0)
+            payload = {'image': ntf}
+            res = self.client.post(url, payload, format='multipart')
+
+        self.recipe.refresh_from_db()
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertIn('image', res.data)
+        self.assertTrue(os.path.exists(self.recipe.image.path))
+
+    def test_upload_invalid_recipe_image(self):
+        url = image_upload_url(self.recipe.id)
+        payload = {'image': 'invalidimage'}
+        res = self.client.post(url, payload, format='multipart')
+
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class RecipeFilterTests(TestCase):
+
+    def setUp(self):
+        self.client = APIClient()
+        self.user = get_user_model().objects.create(
+            email='sample@user.com',
+            password='testpass'
+        )
+        self.client.force_authenticate(self.user)
+        self.recipe1 = create_sample_recipe(user=self.user, title='recipe 1')
+        self.recipe2 = create_sample_recipe(user=self.user, title='recipe 2')
+        self.basic_recipe = create_sample_recipe(
+            user=self.user,
+            title='recipe 3'
+        )
+
+    def test_filter_recipe_by_tags(self):
+        tag1 = create_sample_tag(user=self.user, name='tag 1')
+        tag2 = create_sample_tag(user=self.user, name='tag 2')
+        self.recipe1.tags.add(tag1)
+        self.recipe2.tags.add(tag2)
+        payload = {'tags': f'{tag1.id},{tag2.id}'}
+        res = self.client.get(RECIPES_URL, payload)
+        serializer1 = RecipeSerializer(self.recipe1)
+        serializer2 = RecipeSerializer(self.recipe2)
+        serializer3 = RecipeSerializer(self.basic_recipe)
+        self.assertIn(serializer1.data, res.data)
+        self.assertIn(serializer2.data, res.data)
+        self.assertNotIn(serializer3.data, res.data)
+
+    def test_filter_recipes_by_ingredients(self):
+        ingr1 = create_sample_ingredient(user=self.user, name='ingr 1')
+        ingr2 = create_sample_ingredient(user=self.user, name='ingr 2')
+        self.recipe1.ingredients.add(ingr1)
+        self.recipe2.ingredients.add(ingr2)
+        payload = {'ingredients': f'{ingr1.id},{ingr2.id}'}
+        res = self.client.get(RECIPES_URL, payload)
+        serializer1 = RecipeSerializer(self.recipe1)
+        serializer2 = RecipeSerializer(self.recipe2)
+        serializer3 = RecipeSerializer(self.basic_recipe)
+        self.assertIn(serializer1.data, res.data)
+        self.assertIn(serializer2.data, res.data)
+        self.assertNotIn(serializer3.data, res.data)
