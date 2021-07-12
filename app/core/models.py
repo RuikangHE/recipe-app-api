@@ -12,7 +12,7 @@ def recipe_image_file_path(instance, filename):
     extension = filename.split('.')[-1]
     filename = f'{uuid.uuid4()}.{extension}'
 
-    return os.path.join('uploads/recipe', filename)
+    return os.path.join('uploads/recipe' + os.sep, filename)
 
 
 class UserManager(BaseUserManager):
