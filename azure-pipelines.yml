@@ -19,6 +19,13 @@ strategy:
   maxParallel: 3
 
 steps:
+- task: SonarQubePrepare@5
+  inputs:
+    SonarQube: 'SonarQubeTest'
+    scannerMode: 'CLI'
+    configMode: 'manual'
+    cliProjectKey: 'SonarQubeTest_SonarQubeTest_AYDLNpuCuiHBvXcJgpje'
+    cliSources: '.'
 - task: UsePythonVersion@0
   inputs:
     versionSpec: '$(PYTHON_VERSION)'
@@ -50,17 +57,8 @@ steps:
     pushd '$(projectRoot)'
     python manage.py test --testrunner xmlrunner.extra.djangotestrunner.XMLTestRunner --no-input
   displayName: 'Run tests'
-
-- task: SonarQubePrepare@5
-  inputs:
-    SonarQube: 'SonarQubeTest'
-    scannerMode: 'CLI'
-    configMode: 'manual'
-    cliProjectKey: 'SonarQubeTest_SonarQubeTest_AYDLNpuCuiHBvXcJgpje'
-    cliSources: '.'
     
 - task: SonarQubeAnalyze@5
-
 - task: SonarQubePublish@5
   inputs:
     pollingTimeoutSec: '300'
