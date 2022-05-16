@@ -24,7 +24,7 @@ steps:
     SonarQube: 'SonarQubeTest'
     scannerMode: 'CLI'
     configMode: 'manual'
-    cliProjectKey: 'SonarQubeTest_SonarQubeTest_AYDLNpuCuiHBvXcJgpje'
+    cliProjectKey: '1f970b2ddab1a79e375bd2b13384afa23828a646'
     cliSources: '.'
 - task: UsePythonVersion@0
   inputs:
